@@ -1,0 +1,177 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'com.github.davidmc24.gradle.plugin.avro' version '1.9.1'
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+
+group = 'org.wespeak'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://packages.confluent.io/maven/'
+    }
+}
+
+ext {
+    set('springCloudVersion', '2024.0.0')
+    set('testcontainersVersion', '1.19.3')
+    set('springdocVersion', '2.3.0')
+    set('avroVersion', '1.11.3')
+    set('keycloakVersion', '23.0.3')
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // MongoDB
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    
+    // Redis Cache
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    
+    // Caffeine Local Cache
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    
+    // Spring Cloud Stream with Kafka
+    implementation 'org.springframework.cloud:spring-cloud-stream'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    
+    // Avro Serialization
+    implementation "org.apache.avro:avro:${avroVersion}"
+    implementation 'io.confluent:kafka-avro-serializer:7.5.3'
+    
+    // Security with Keycloak
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    
+    // Observability
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    
+    // OpenAPI Documentation
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // JSON Processing
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    
+    // Development Tools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    
+    // Testcontainers
+    testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mongodb:${testcontainersVersion}"
+    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
+    
+    // Embedded MongoDB for faster unit tests
+    testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.11.0'
+    
+    // REST Assured for API Testing
+    testImplementation 'io.rest-assured:rest-assured:5.3.2'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+// Avro Code Generation
+avro {
+    stringType = 'String'
+}
+
+// Generate Avro sources before compilation
+generateAvroJava {
+    source = file('src/main/resources/avro')
+    outputDir = file('build/generated-sources/avro')
+}
+
+compileJava.dependsOn generateAvroJava
+
+sourceSets {
+    main {
+        java {
+            srcDir 'build/generated-sources/avro'
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    // Run only unit tests (exclude integration tests)
+    exclude '**/*IT.class'
+}
+
+// Integration tests task
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+    
+    useJUnitPlatform()
+    include '**/*IT.class'
+    
+    // Run after unit tests
+    shouldRunAfter test
+}
+
+// Make check run both unit and integration tests
+check.dependsOn integrationTest
+
+// Optimize Docker build
+tasks.named('bootJar') {
+    layered {
+        enabled = true
+    }
+}
+
+// JVM options for better performance
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters']
+}
+
+// Spotless code formatting
+spotless {
+    java {
+        // Use default google-java-format
+        googleJavaFormat()
+        
+        // Remove unused imports
+        removeUnusedImports()
+        
+        // Format additional files
+        target 'src/**/*.java'
+        
+        // Optionally exclude generated code
+        targetExclude 'build/**/*.java'
+    }
+}
