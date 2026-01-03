@@ -44,20 +44,20 @@ dependencies {
     // MongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     
-    // Redis Cache
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    // Redis Cache (optional - disabled for now)
+    // implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    // implementation 'org.springframework.boot:spring-boot-starter-cache'
     
     // Caffeine Local Cache
     implementation 'com.github.ben-manes.caffeine:caffeine'
     
-    // Spring Cloud Stream with Kafka
-    implementation 'org.springframework.cloud:spring-cloud-stream'
-    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    // Spring Cloud Stream with Kafka (disabled until compatible with Spring Boot 4)
+    // implementation 'org.springframework.cloud:spring-cloud-stream'
+    // implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
     
-    // Avro Serialization
-    implementation "org.apache.avro:avro:${avroVersion}"
-    implementation 'io.confluent:kafka-avro-serializer:7.5.3'
+    // Avro Serialization (for future Kafka usage)
+    // implementation "org.apache.avro:avro:${avroVersion}"
+    // implementation 'io.confluent:kafka-avro-serializer:7.5.3'
     
     // Security with Keycloak
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -82,14 +82,14 @@ dependencies {
     
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    // testImplementation 'org.springframework.kafka:spring-kafka-test'
     testImplementation 'org.springframework.security:spring-security-test'
     
     // Testcontainers
     testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:mongodb:${testcontainersVersion}"
-    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
+    // testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
     
     // Embedded MongoDB for faster unit tests
     testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.11.0'
