@@ -35,6 +35,16 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Apply code formatting
+        run: ./gradlew spotlessApply --no-daemon
+      
+      - name: Commit formatting changes
+        if: always()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git diff --quiet || (git add -A && git commit -m "style: apply Spotless formatting [skip ci]" && git push)
+
       - name: Run tests
         run: ./gradlew clean test
 
