@@ -1,7 +1,7 @@
 package org.wespeak.lesson.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -13,16 +13,24 @@ import java.util.UUID;
 
 /**
  * Publisher for lesson events to Kafka.
+ * Events are only published if StreamBridge is available (Kafka configured).
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class LessonEventPublisher {
 
     private static final String BINDING = "lessonEvents-out-0";
     private static final String SOURCE = "lesson-service";
 
     private final StreamBridge streamBridge;
+
+    @Autowired(required = false)
+    public LessonEventPublisher(StreamBridge streamBridge) {
+        this.streamBridge = streamBridge;
+        if (streamBridge == null) {
+            log.warn("StreamBridge not available - Kafka events will not be published");
+        }
+    }
 
     public void publishLessonStarted(
             String userId,
