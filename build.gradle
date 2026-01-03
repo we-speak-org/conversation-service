@@ -29,11 +29,8 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', '2024.0.0')
     set('testcontainersVersion', '1.19.3')
-    set('springdocVersion', '2.3.0')
-    set('avroVersion', '1.11.3')
-    set('keycloakVersion', '23.0.3')
+    set('springdocVersion', '2.8.0')
 }
 
 dependencies {
