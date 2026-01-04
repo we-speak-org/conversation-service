@@ -1,5 +1,12 @@
 package org.wespeak.conversation.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,202 +26,191 @@ import org.wespeak.conversation.repository.ParticipantRepository;
 import org.wespeak.conversation.repository.SessionRepository;
 import org.wespeak.conversation.repository.TimeSlotRepository;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class SessionServiceTest {
 
-    @Mock
-    private SessionRepository sessionRepository;
+  @Mock private SessionRepository sessionRepository;
 
-    @Mock
-    private ParticipantRepository participantRepository;
+  @Mock private ParticipantRepository participantRepository;
 
-    @Mock
-    private TimeSlotRepository timeSlotRepository;
+  @Mock private TimeSlotRepository timeSlotRepository;
 
-    @Mock
-    private RegistrationService registrationService;
+  @Mock private RegistrationService registrationService;
 
-    @Mock
-    private ConversationEventPublisher eventPublisher;
+  @Mock private ConversationEventPublisher eventPublisher;
 
-    @InjectMocks
-    private SessionService sessionService;
+  @InjectMocks private SessionService sessionService;
 
-    private TimeSlot testSlot;
-    private Session testSession;
-    private String userId;
+  private TimeSlot testSlot;
+  private Session testSession;
+  private String userId;
 
-    @BeforeEach
-    void setUp() {
-        userId = "user-123";
-        
-        testSlot = TimeSlot.builder()
-                .id("slot-1")
-                .targetLanguageCode("en")
-                .level(TimeSlot.Level.A2)
-                .startTime(Instant.now()) // Starting now
-                .durationMinutes(30)
-                .maxParticipants(8)
-                .build();
+  @BeforeEach
+  void setUp() {
+    userId = "user-123";
 
-        testSession = Session.builder()
-                .id("session-1")
-                .timeSlotId("slot-1")
-                .targetLanguageCode("en")
-                .level(TimeSlot.Level.A2)
-                .status(Session.Status.waiting)
-                .build();
+    testSlot =
+        TimeSlot.builder()
+            .id("slot-1")
+            .targetLanguageCode("en")
+            .level(TimeSlot.Level.A2)
+            .startTime(Instant.now()) // Starting now
+            .durationMinutes(30)
+            .maxParticipants(8)
+            .build();
 
-        ReflectionTestUtils.setField(sessionService, "gracePeriodMinutes", 5);
-        ReflectionTestUtils.setField(sessionService, "maxParticipants", 8);
-        ReflectionTestUtils.setField(sessionService, "minParticipants", 2);
-    }
+    testSession =
+        Session.builder()
+            .id("session-1")
+            .timeSlotId("slot-1")
+            .targetLanguageCode("en")
+            .level(TimeSlot.Level.A2)
+            .status(Session.Status.waiting)
+            .build();
 
-    @Test
-    void joinSession_shouldCreateParticipant() {
-        // Given
-        JoinSessionRequest request = JoinSessionRequest.builder()
-                .timeSlotId("slot-1")
-                .recordingConsent(true)
-                .displayName("Test User")
-                .build();
+    ReflectionTestUtils.setField(sessionService, "gracePeriodMinutes", 5);
+    ReflectionTestUtils.setField(sessionService, "maxParticipants", 8);
+    ReflectionTestUtils.setField(sessionService, "minParticipants", 2);
+  }
 
-        when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(true);
-        when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
-                .thenReturn(Optional.empty());
-        when(sessionRepository.findByTimeSlotIdAndStatusIn(eq("slot-1"), any(), any()))
-                .thenReturn(Optional.of(testSession));
-        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(testSlot));
-        when(participantRepository.countBySessionIdAndStatus(any(), eq(Participant.Status.connected)))
-                .thenReturn(0L);
-        when(participantRepository.findBySessionIdAndUserId("session-1", userId))
-                .thenReturn(Optional.empty());
-        when(participantRepository.save(any())).thenAnswer(inv -> {
-            Participant p = inv.getArgument(0);
-            p.setId("participant-1");
-            return p;
-        });
-        when(sessionRepository.save(any())).thenReturn(testSession);
-        when(participantRepository.findBySessionIdAndStatusNot(any(), any())).thenReturn(List.of());
+  @Test
+  void joinSession_shouldCreateParticipant() {
+    // Given
+    JoinSessionRequest request =
+        JoinSessionRequest.builder()
+            .timeSlotId("slot-1")
+            .recordingConsent(true)
+            .displayName("Test User")
+            .build();
 
-        // When
-        SessionDto result = sessionService.joinSession(userId, request);
+    when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(true);
+    when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
+        .thenReturn(Optional.empty());
+    when(sessionRepository.findByTimeSlotIdAndStatusIn(eq("slot-1"), any(), any()))
+        .thenReturn(Optional.of(testSession));
+    when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(testSlot));
+    when(participantRepository.countBySessionIdAndStatus(any(), eq(Participant.Status.connected)))
+        .thenReturn(0L);
+    when(participantRepository.findBySessionIdAndUserId("session-1", userId))
+        .thenReturn(Optional.empty());
+    when(participantRepository.save(any()))
+        .thenAnswer(
+            inv -> {
+              Participant p = inv.getArgument(0);
+              p.setId("participant-1");
+              return p;
+            });
+    when(sessionRepository.save(any())).thenReturn(testSession);
+    when(participantRepository.findBySessionIdAndStatusNot(any(), any())).thenReturn(List.of());
 
-        // Then
-        assertNotNull(result);
-        assertEquals("session-1", result.getId());
-        verify(participantRepository).save(any());
-        verify(registrationService).markAttended("slot-1", userId);
-    }
+    // When
+    SessionDto result = sessionService.joinSession(userId, request);
 
-    @Test
-    void joinSession_shouldThrowWhenNotRegistered() {
-        // Given
-        JoinSessionRequest request = JoinSessionRequest.builder()
-                .timeSlotId("slot-1")
-                .build();
-        when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(false);
+    // Then
+    assertNotNull(result);
+    assertEquals("session-1", result.getId());
+    verify(participantRepository).save(any());
+    verify(registrationService).markAttended("slot-1", userId);
+  }
 
-        // When/Then
-        SessionException ex = assertThrows(SessionException.class,
-                () -> sessionService.joinSession(userId, request));
-        assertEquals("NOT_REGISTERED", ex.getCode());
-    }
+  @Test
+  void joinSession_shouldThrowWhenNotRegistered() {
+    // Given
+    JoinSessionRequest request = JoinSessionRequest.builder().timeSlotId("slot-1").build();
+    when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(false);
 
-    @Test
-    void joinSession_shouldThrowWhenAlreadyInSession() {
-        // Given
-        JoinSessionRequest request = JoinSessionRequest.builder()
-                .timeSlotId("slot-1")
-                .build();
-        Participant existingParticipant = Participant.builder()
-                .id("existing")
-                .sessionId("other-session")
-                .status(Participant.Status.connected)
-                .build();
+    // When/Then
+    SessionException ex =
+        assertThrows(SessionException.class, () -> sessionService.joinSession(userId, request));
+    assertEquals("NOT_REGISTERED", ex.getCode());
+  }
 
-        when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(true);
-        when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
-                .thenReturn(Optional.of(existingParticipant));
+  @Test
+  void joinSession_shouldThrowWhenAlreadyInSession() {
+    // Given
+    JoinSessionRequest request = JoinSessionRequest.builder().timeSlotId("slot-1").build();
+    Participant existingParticipant =
+        Participant.builder()
+            .id("existing")
+            .sessionId("other-session")
+            .status(Participant.Status.connected)
+            .build();
 
-        // When/Then
-        SessionException ex = assertThrows(SessionException.class,
-                () -> sessionService.joinSession(userId, request));
-        assertEquals("ALREADY_IN_SESSION", ex.getCode());
-    }
+    when(registrationService.isUserRegistered("slot-1", userId)).thenReturn(true);
+    when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
+        .thenReturn(Optional.of(existingParticipant));
 
-    @Test
-    void updateMediaState_shouldUpdateParticipant() {
-        // Given
-        Participant participant = Participant.builder()
-                .id("participant-1")
-                .sessionId("session-1")
-                .userId(userId)
-                .status(Participant.Status.connected)
-                .cameraEnabled(true)
-                .micEnabled(true)
-                .build();
+    // When/Then
+    SessionException ex =
+        assertThrows(SessionException.class, () -> sessionService.joinSession(userId, request));
+    assertEquals("ALREADY_IN_SESSION", ex.getCode());
+  }
 
-        MediaStateRequest request = MediaStateRequest.builder()
-                .cameraEnabled(false)
-                .micEnabled(true)
-                .build();
+  @Test
+  void updateMediaState_shouldUpdateParticipant() {
+    // Given
+    Participant participant =
+        Participant.builder()
+            .id("participant-1")
+            .sessionId("session-1")
+            .userId(userId)
+            .status(Participant.Status.connected)
+            .cameraEnabled(true)
+            .micEnabled(true)
+            .build();
 
-        when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
-                .thenReturn(Optional.of(participant));
-        when(participantRepository.save(any())).thenReturn(participant);
+    MediaStateRequest request =
+        MediaStateRequest.builder().cameraEnabled(false).micEnabled(true).build();
 
-        // When
-        ParticipantDto result = sessionService.updateMediaState(userId, request);
+    when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
+        .thenReturn(Optional.of(participant));
+    when(participantRepository.save(any())).thenReturn(participant);
 
-        // Then
-        assertNotNull(result);
-        verify(participantRepository).save(argThat(p -> !p.getCameraEnabled() && p.getMicEnabled()));
-    }
+    // When
+    ParticipantDto result = sessionService.updateMediaState(userId, request);
 
-    @Test
-    void leaveSession_shouldDisconnectParticipant() {
-        // Given
-        Participant participant = Participant.builder()
-                .id("participant-1")
-                .sessionId("session-1")
-                .userId(userId)
-                .status(Participant.Status.connected)
-                .build();
+    // Then
+    assertNotNull(result);
+    verify(participantRepository).save(argThat(p -> !p.getCameraEnabled() && p.getMicEnabled()));
+  }
 
-        when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
-                .thenReturn(Optional.of(participant));
-        when(participantRepository.save(any())).thenReturn(participant);
-        when(sessionRepository.findById("session-1")).thenReturn(Optional.of(testSession));
-        when(participantRepository.countBySessionIdAndStatus(any(), eq(Participant.Status.connected)))
-                .thenReturn(1L);
+  @Test
+  void leaveSession_shouldDisconnectParticipant() {
+    // Given
+    Participant participant =
+        Participant.builder()
+            .id("participant-1")
+            .sessionId("session-1")
+            .userId(userId)
+            .status(Participant.Status.connected)
+            .build();
 
-        // When
-        sessionService.leaveSession(userId);
+    when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
+        .thenReturn(Optional.of(participant));
+    when(participantRepository.save(any())).thenReturn(participant);
+    when(sessionRepository.findById("session-1")).thenReturn(Optional.of(testSession));
+    when(participantRepository.countBySessionIdAndStatus(any(), eq(Participant.Status.connected)))
+        .thenReturn(1L);
 
-        // Then
-        verify(participantRepository).save(argThat(p -> 
-                p.getStatus() == Participant.Status.disconnected && p.getLeftAt() != null));
-    }
+    // When
+    sessionService.leaveSession(userId);
 
-    @Test
-    void leaveSession_shouldThrowWhenNoActiveSession() {
-        // Given
-        when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
-                .thenReturn(Optional.empty());
+    // Then
+    verify(participantRepository)
+        .save(
+            argThat(
+                p -> p.getStatus() == Participant.Status.disconnected && p.getLeftAt() != null));
+  }
 
-        // When/Then
-        SessionException ex = assertThrows(SessionException.class,
-                () -> sessionService.leaveSession(userId));
-        assertEquals("NO_ACTIVE_SESSION", ex.getCode());
-    }
+  @Test
+  void leaveSession_shouldThrowWhenNoActiveSession() {
+    // Given
+    when(participantRepository.findByUserIdAndStatusNot(userId, Participant.Status.disconnected))
+        .thenReturn(Optional.empty());
+
+    // When/Then
+    SessionException ex =
+        assertThrows(SessionException.class, () -> sessionService.leaveSession(userId));
+    assertEquals("NO_ACTIVE_SESSION", ex.getCode());
+  }
 }

@@ -12,19 +12,19 @@ import org.springframework.test.context.ActiveProfiles;
 @EnabledIf("isDockerAvailable")
 class ConversationServiceApplicationTests {
 
-    @Test
-    void contextLoads() {
-        // Test that the application context loads with Testcontainers MongoDB
-    }
+  @Test
+  void contextLoads() {
+    // Test that the application context loads with Testcontainers MongoDB
+  }
 
-    static boolean isDockerAvailable() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "info");
-            Process process = pb.start();
-            int exitCode = process.waitFor();
-            return exitCode == 0;
-        } catch (Exception e) {
-            return false;
-        }
+  static boolean isDockerAvailable() {
+    try {
+      ProcessBuilder pb = new ProcessBuilder("docker", "info");
+      Process process = pb.start();
+      int exitCode = process.waitFor();
+      return exitCode == 0;
+    } catch (Exception e) {
+      return false;
     }
+  }
 }

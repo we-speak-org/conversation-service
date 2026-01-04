@@ -10,15 +10,14 @@ import org.wespeak.conversation.websocket.SignalingWebSocketHandler;
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final SignalingWebSocketHandler signalingHandler;
+  private final SignalingWebSocketHandler signalingHandler;
 
-    public WebSocketConfig(SignalingWebSocketHandler signalingHandler) {
-        this.signalingHandler = signalingHandler;
-    }
+  public WebSocketConfig(SignalingWebSocketHandler signalingHandler) {
+    this.signalingHandler = signalingHandler;
+  }
 
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(signalingHandler, "/ws/signaling")
-                .setAllowedOrigins("*");
-    }
+  @Override
+  public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+    registry.addHandler(signalingHandler, "/ws/signaling").setAllowedOrigins("*");
+  }
 }

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MediaStateRequest {
-    private Boolean cameraEnabled;
-    private Boolean micEnabled;
+  private Boolean cameraEnabled;
+  private Boolean micEnabled;
 }

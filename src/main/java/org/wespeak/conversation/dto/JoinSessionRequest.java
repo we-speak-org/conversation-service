@@ -11,11 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JoinSessionRequest {
-    @NotNull
-    private String timeSlotId;
+  @NotNull private String timeSlotId;
 
-    @Builder.Default
-    private Boolean recordingConsent = false;
+  @Builder.Default private Boolean recordingConsent = false;
 
-    private String displayName;
+  private String displayName;
 }
